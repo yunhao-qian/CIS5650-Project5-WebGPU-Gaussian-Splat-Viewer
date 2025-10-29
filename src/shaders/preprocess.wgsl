@@ -84,10 +84,32 @@ var<storage, read_write> sort_indices : array<u32>;
 @group(2) @binding(3)
 var<storage, read_write> sort_dispatch: DispatchIndirect;
 
+const MAX_SH_COEFFS: u32 = 16u;
+const SH_CHANNELS: u32 = 3u;
+const SH_HALFS_PER_GAUSSIAN: u32 = MAX_SH_COEFFS * SH_CHANNELS; // 48 half floats
+
+fn read_sh_half(splat_idx: u32, half_offset: u32) -> f32 {
+    // Each u32 in the buffer stores two f16 values packed together.
+    let global_half_index = splat_idx * SH_HALFS_PER_GAUSSIAN + half_offset;
+    let packed_index = global_half_index >> 1u;
+    let packed = sh_coeffs[packed_index];
+    let decoded = unpack2x16float(packed);
+    let is_high = (global_half_index & 1u) == 1u;
+    return select(decoded.x, decoded.y, is_high);
+}
+
 /// reads the ith sh coef from the storage buffer 
 fn sh_coef(splat_idx: u32, c_idx: u32) -> vec3<f32> {
-    // TODO: access your binded sh_coeff, see load.ts for how it is stored
-    return vec3<f32>(0.0);
+    if (c_idx >= MAX_SH_COEFFS) {
+        return vec3<f32>(0.0);
+    }
+
+    let base_half = c_idx * SH_CHANNELS;
+    return vec3<f32>(
+        read_sh_half(splat_idx, base_half + 0u),
+        read_sh_half(splat_idx, base_half + 1u),
+        read_sh_half(splat_idx, base_half + 2u)
+    );
 }
 
 // spherical harmonics evaluation with Condon–Shortley phase
@@ -151,6 +173,7 @@ fn preprocess(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgr
     let pos_view = (camera.view * vec4<f32>(pos_world, 1.0)).xyz;
     var pos_ndc = camera.proj * vec4<f32>(pos_view, 1.0);
     pos_ndc /= pos_ndc.w;
+    // View-frustum culling:
     if (
         !(abs(pos_ndc.x) <= 1.1) ||
         !(abs(pos_ndc.y) <= 1.1) ||
@@ -239,7 +262,7 @@ fn preprocess(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgr
         pack2x16float(vec2<f32>(conic.z, radius))
     );
 
-    sort_indices[splat_idx] = idx;
+    sort_indices[splat_idx] = splat_idx;
     sort_depths[splat_idx] = float_to_u32_key(-pos_view.z);
 
     let keys_per_dispatch = workgroupSize * sortKeyPerThread; 

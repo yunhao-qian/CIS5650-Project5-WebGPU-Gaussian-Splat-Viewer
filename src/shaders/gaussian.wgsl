@@ -78,7 +78,7 @@ fn vs_main(
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     // https://github.com/graphdeco-inria/diff-gaussian-rasterization/blob/main/cuda_rasterizer/forward.cu#L330
     let d = in.position.xy - in.center_pixel; // in pixel space
-    let power = -0.5 * (in.conic.x * d.x * d.x + in.conic.y * d.y * d.y) - in.conic.y * d.x * d.y;
+    let power = -0.5 * (in.conic.x * d.x * d.x + in.conic.z * d.y * d.y) - in.conic.y * d.x * d.y;
     if (power > 0.0) {
         discard;
     } 

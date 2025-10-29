@@ -70,7 +70,7 @@ WebGPU errors will appear in your browser's developer console (Ctrl + Shift + J 
 
 ### Part 1: Understanding 3D Gaussian Point Cloud & Add MVP calculation (10pts)
 - Read over the [3D Gaussian Splatting Paper](https://repo-sam.inria.fr/fungraph/3d-gaussian-splatting/) to have a basic understanding. 
-- Then read over `point_cloud` renderer, add MVP calculation to the vertex shader. After that, you can see yellow point cloud rendered to screen. 
+- Then read over `point_cloud` renderer, add MVP calculation to the vertex shader. After that, you can see yellow point cloud rendered to screen.
 
 ### Part 2: Gaussian Renderer (80pts total)(50pts(preprocess)+30pts(renderer))
 

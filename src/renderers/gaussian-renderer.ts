@@ -17,7 +17,13 @@ const createBuffer = (
   data?: ArrayBuffer | ArrayBufferView
 ) => {
   const buffer = device.createBuffer({ label, size, usage });
-  if (data) device.queue.writeBuffer(buffer, 0, data);
+  if (data !== undefined) {
+    if (data instanceof ArrayBuffer) {
+      device.queue.writeBuffer(buffer, 0, data);
+    } else {
+      device.queue.writeBuffer(buffer, 0, data.buffer as ArrayBuffer, data.byteOffset, data.byteLength);
+    }
+  }
   return buffer;
 };
 
@@ -210,7 +216,22 @@ export default function get_renderer(
     fragment: {
       module: device.createShaderModule({ code: renderWGSL }),
       entryPoint: 'fs_main',
-      targets: [{ format: presentation_format }],
+      targets: [{
+        format: presentation_format,
+        blend: {
+          color: {
+            srcFactor: 'src-alpha',
+            dstFactor: 'one-minus-src-alpha',
+            operation: 'add',
+          },
+          alpha: {
+            srcFactor: 'one',
+            dstFactor: 'one-minus-src-alpha',
+            operation: 'add',
+          },
+        },
+        writeMask: GPUColorWrite.ALL,
+      }],
     },
     primitive: {
       topology: 'triangle-list',
@@ -270,7 +291,9 @@ export default function get_renderer(
       device.queue.writeBuffer(sorter.sort_dispatch_indirect_buffer, 0, nulling_data);
       preprocess(encoder);
       sorter.sort(encoder);
-      encoder.copyBufferToBuffer(sorter.sort_info_buffer, 0, indirect_draw_buffer, 0, 4 * 4);
+      // Copy the updated instance count (keys_size) into the indirect draw arguments without
+      // clobbering the fixed vertex count (6 vertices per splat quad).
+      encoder.copyBufferToBuffer(sorter.sort_info_buffer, 0, indirect_draw_buffer, 4, 4);
       render(encoder, texture_view);
     },
     camera_buffer,
