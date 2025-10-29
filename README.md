@@ -10,7 +10,7 @@
 
 ## Live Demo
 
-[![Live demo](img/thumb.png)]([http://TODO.github.io/Project4-WebGPU-Forward-Plus-and-Clustered-Deferred](https://yunhao-qian.com/showcase/gaussian-splatting))
+[![Live demo](img/thumb.png)](https://yunhao-qian.github.io/showcase/gaussian-splatting/)
 
 ## Demo Video
 
